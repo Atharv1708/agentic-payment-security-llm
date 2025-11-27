@@ -1,0 +1,88 @@
+{
+  "summary": {
+    "total_tests": 13,
+    "passed_tests": 13,
+    "success_rate": 100.0,
+    "timestamp": "2025-11-27T06:48:14.267838"
+  },
+  "detailed_results": [
+    {
+      "test": "API Health Check",
+      "success": true,
+      "details": "Status: 200, Response: {'message': 'Payment Security & Fraud Detection API', 'status': 'operational'}",
+      "timestamp": "2025-11-27T06:47:21.134373"
+    },
+    {
+      "test": "Create Transaction with AI Analysis",
+      "success": true,
+      "details": "Status: 200, Risk Score: 8, Status: approved, Recommendation: ALLOW",
+      "timestamp": "2025-11-27T06:47:35.025541"
+    },
+    {
+      "test": "Get All Transactions",
+      "success": true,
+      "details": "Status: 200, Count: 3",
+      "timestamp": "2025-11-27T06:47:35.076641"
+    },
+    {
+      "test": "Get Transaction by ID",
+      "success": true,
+      "details": "Status: 200, Has Analysis: True",
+      "timestamp": "2025-11-27T06:47:35.112929"
+    },
+    {
+      "test": "Get Analytics",
+      "success": true,
+      "details": "Status: 200, Total: 3, Avg Risk: 36.0",
+      "timestamp": "2025-11-27T06:47:35.153813"
+    },
+    {
+      "test": "Get Alerts",
+      "success": true,
+      "details": "Status: 200, Alert Count: 1",
+      "timestamp": "2025-11-27T06:47:35.191267"
+    },
+    {
+      "test": "Filter Transactions by Approved",
+      "success": true,
+      "details": "Status: 200, Count: 2",
+      "timestamp": "2025-11-27T06:47:35.233029"
+    },
+    {
+      "test": "Filter Transactions by Challenged",
+      "success": true,
+      "details": "Status: 200, Count: 1",
+      "timestamp": "2025-11-27T06:47:35.266518"
+    },
+    {
+      "test": "Filter Transactions by Blocked",
+      "success": true,
+      "details": "Status: 200, Count: 0",
+      "timestamp": "2025-11-27T06:47:35.301366"
+    },
+    {
+      "test": "Simulate Normal Transaction",
+      "success": true,
+      "details": "Status: 200, Generated: 1",
+      "timestamp": "2025-11-27T06:47:42.882965"
+    },
+    {
+      "test": "Simulate Suspicious Transaction",
+      "success": true,
+      "details": "Status: 200, Generated: 1",
+      "timestamp": "2025-11-27T06:48:00.687785"
+    },
+    {
+      "test": "Simulate Attack Transaction",
+      "success": true,
+      "details": "Status: 200, Generated: 1",
+      "timestamp": "2025-11-27T06:48:14.211008"
+    },
+    {
+      "test": "Clear All Transactions",
+      "success": true,
+      "details": "Status: 200, Message: All data cleared",
+      "timestamp": "2025-11-27T06:48:14.266969"
+    }
+  ]
+}
