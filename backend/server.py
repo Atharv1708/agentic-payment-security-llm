@@ -10,7 +10,6 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 import random
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -102,88 +101,80 @@ class AnalyticsResponse(BaseModel):
 
 # AI Fraud Detection
 async def analyze_transaction_with_ai(transaction: Transaction) -> FraudAnalysisResponse:
-    """Use OpenAI GPT-5.1 to analyze transaction for fraud"""
-    try:
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"fraud-analysis-{transaction.id}",
-            system_message="""You are an expert fraud detection AI system. Analyze payment transactions and provide:
-1. Risk score (0-100)
-2. Recommendation (ALLOW, CHALLENGE, or BLOCK)
-3. Threat category
-4. Human-readable reasoning
-5. Detection flags
-6. Detailed analysis
+    """
+    Production-safe AI-like fraud analysis (rule-based fallback).
+    This replaces Emergent AI to ensure deployability.
+    """
 
-Consider patterns like:
-- Abnormal spending behavior
-- Card testing attacks
-- Account takeover attempts
-- Bot-generated activity
-- Repeated failed attempts
-- Velocity abuse
-- Mismatched IP-country signals
-- Suspicious devices
-- Identity inconsistencies
+    risk_score = 0
+    flags = []
+    reasoning_parts = []
 
-Respond ONLY with valid JSON in this format:
-{
-  "risk_score": 0-100,
-  "recommendation": "ALLOW|CHALLENGE|BLOCK",
-  "threat_category": "category name",
-  "reasoning": "clear explanation",
-  "detection_flags": ["flag1", "flag2"],
-  "detailed_analysis": {
-    "behavioral": "analysis",
-    "geolocation": "analysis",
-    "device": "analysis",
-    "velocity": "analysis",
-    "pattern": "analysis"
-  }
-}"""
-        ).with_model("openai", "gpt-5.1")
-        
-        transaction_data = f"""Transaction Details:
-- Amount: ${transaction.amount} {transaction.currency}
-- Merchant: {transaction.merchant}
-- Card: {transaction.card_type} ending in {transaction.card_last4}
-- Customer: {transaction.customer_email} (ID: {transaction.customer_id})
-- IP: {transaction.ip_address}
-- Country: {transaction.country}
-- Device: {transaction.device_type} (ID: {transaction.device_id})
-- Timestamp: {transaction.timestamp}"""
-        
-        user_message = UserMessage(text=f"Analyze this transaction for fraud:\n\n{transaction_data}")
-        response = await chat.send_message(user_message)
-        
-        # Parse AI response
-        import json
-        response_text = response.strip()
-        if response_text.startswith('```json'):
-            response_text = response_text[7:]
-        if response_text.endswith('```'):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
-        
-        analysis_data = json.loads(response_text)
-        
-        return FraudAnalysisResponse(**analysis_data)
-    except Exception as e:
-        logger.error(f"AI analysis error: {str(e)}")
-        # Fallback analysis
-        return FraudAnalysisResponse(
-            risk_score=50,
-            recommendation="CHALLENGE",
-            threat_category="Unknown",
-            reasoning=f"AI analysis unavailable. Manual review recommended. Error: {str(e)}",
-            detection_flags=["ai_analysis_failed"],
-            detailed_analysis={
-                "error": str(e),
-                "fallback": "manual_review_needed"
-            }
-        )
+    # Amount-based risk
+    if transaction.amount > 3000:
+        risk_score += 45
+        flags.append("very_high_amount")
+        reasoning_parts.append("Unusually high transaction amount")
+    elif transaction.amount > 1500:
+        risk_score += 30
+        flags.append("high_amount")
+        reasoning_parts.append("High transaction amount")
+
+    # Country risk
+    high_risk_countries = ["CN", "RU", "NG", "IR", "KP", "ZZ", "XX"]
+    if transaction.country.upper() in high_risk_countries:
+        risk_score += 25
+        flags.append("high_risk_country")
+        reasoning_parts.append("Transaction from high-risk country")
+
+    # Device risk
+    if transaction.device_type.lower() in ["unknown", "emulator", "bot"]:
+        risk_score += 20
+        flags.append("suspicious_device")
+        reasoning_parts.append("Suspicious or unidentified device")
+
+    # Card testing pattern (very low amount)
+    if transaction.amount < 5:
+        risk_score += 20
+        flags.append("possible_card_testing")
+        reasoning_parts.append("Very small amount suggests card testing attack")
+
+    # Clamp risk score
+    risk_score = min(risk_score, 100)
+
+    # Recommendation logic
+    if risk_score >= 70:
+        recommendation = "BLOCK"
+    elif risk_score >= 40:
+        recommendation = "CHALLENGE"
+    else:
+        recommendation = "ALLOW"
+
+    # Threat category
+    if "possible_card_testing" in flags:
+        threat_category = "Card Testing Attack"
+    elif "high_risk_country" in flags:
+        threat_category = "Geo-risk Fraud"
+    elif risk_score >= 70:
+        threat_category = "High-Risk Transaction"
+    else:
+        threat_category = "Normal Transaction"
+
+    return FraudAnalysisResponse(
+        risk_score=risk_score,
+        recommendation=recommendation,
+        threat_category=threat_category,
+        reasoning="; ".join(reasoning_parts) if reasoning_parts else "Transaction appears normal",
+        detection_flags=flags,
+        detailed_analysis={
+            "amount": transaction.amount,
+            "country": transaction.country,
+            "device_type": transaction.device_type,
+            "merchant": transaction.merchant,
+            "risk_components": flags
+        }
+    )
+
 
 # Generate sample transactions
 def generate_sample_transaction(transaction_type: str = "normal") -> TransactionCreate:
